@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import Footer from '../components/footer';
 import SubscribePopup from '../components/SubscribePopup';
 import LearnCard from '../components/LearnCard';
 import { PlayCircle } from 'lucide-react';

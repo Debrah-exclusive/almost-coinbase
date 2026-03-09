@@ -1,5 +1,5 @@
 import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import Footer from '../components/footer';
 import HeroSection from '../components/sections/HeroSection';
 import ExploreCryptoSection from '../components/sections/ExploreCryptoSection';
 import AdvancedTraderSection from '../components/sections/AdvancedTraderSection';
