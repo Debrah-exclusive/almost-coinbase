@@ -106,7 +106,7 @@ const TakeControlSection = () => {
 				<p className="text-[0.8125rem] leading-5 text-gray-60 text-center mt-8">
 					DEX trading is offered by Coinbase Bermuda Technologies Ltd.
 				</p>
-				<p className="text-[0.8125rem] leading-5 text-gray-60 text-center max-w-3xl mx-auto mt-2">
+				<p className="text-[0.8125rem] leading-5 text-gray-60 text-center max-w-3xl mx-auto mt-3 mb-8">
 					Products and features may not be available in all regions. Information is for informational purposes only,
 					and is not an offer or solicitation of an offer, to invest in, or to buy or sell, any interests or shares,
 					or to participate in any investment or trading strategy. Trading cryptocurrency comes with risk.
