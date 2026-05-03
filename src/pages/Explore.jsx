@@ -5,6 +5,8 @@ import Footer from '../components/footer';
 import Container from '../components/ui/Container';
 import Button from '../components/ui/Button';
 import FilterDropdown from '../components/ui/FilterDropdown';
+import { cryptoApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const FALLBACK_GHS = 16.5;
 const COIN_META = [
@@ -97,6 +99,7 @@ const ChangeIndicator = ({ value, className = '' }) => {
 };
 
 const Explore = () => {
+	const { user } = useAuth();
 	const [coins, setCoins] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
@@ -126,55 +129,68 @@ const Explore = () => {
 		})();
 	}, []);
 
-	const fetchPrices = useCallback(async () => {
-		const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${BINANCE_SYMBOLS}`);
-		if (!res.ok) throw new Error(`Binance ${res.status}`);
-		return res.json();
-	}, []);
-
-	const buildCoins = useCallback((tickers) => {
-		const rate = getRate();
-		return tickers
-			.map((t) => {
-				const meta = COIN_META_MAP[t.symbol];
-				if (!meta) return null;
-				const priceUsd = parseFloat(t.lastPrice);
-				const price = priceUsd * rate;
-				const change24h = parseFloat(t.priceChangePercent);
-				const mktCap = priceUsd * (meta.supply || 1) * rate;
-				return {
-					id: t.symbol,
-					name: meta.name,
-					symbol: meta.symbol,
-					image: getCoinIcon(meta.symbol),
-					current_price: price,
-					price_change_percentage_24h: change24h,
-					market_cap: mktCap,
-					total_volume: parseFloat(t.quoteVolume) * rate,
-				};
-			})
-			.filter(Boolean)
-			.sort((a, b) => b.market_cap - a.market_cap);
-	}, [getRate]);
-
 	useEffect(() => {
 		let cancelled = false;
-		(async () => {
+		const fetchData = async () => {
+			setLoading(true);
 			try {
-				const tickers = await fetchPrices();
-				if (!cancelled) { setCoins(buildCoins(tickers)); setLoading(false); }
+				let data;
+				if (assetFilter === 'gainers') {
+					data = await cryptoApi.getGainers();
+				} else if (assetFilter === 'new') {
+					data = await cryptoApi.getNew();
+				} else {
+					data = await cryptoApi.getAll();
+				}
+				
+				if (!cancelled) {
+					// Map backend fields to the UI fields
+					const mapped = data.data.map(c => ({
+						id: c._id,
+						name: c.name,
+						symbol: c.symbol,
+						image: c.image,
+						current_price: c.price,
+						price_change_percentage_24h: c.change24h,
+						market_cap: c.price * 1000000, // Dummy mkt cap for display
+						total_volume: c.price * 50000,  // Dummy volume for display
+					}));
+					setCoins(mapped);
+					setError(null);
+				}
 			} catch (err) {
-				if (!cancelled) { setError(err.message); setLoading(false); }
+				if (!cancelled) setError(err.message);
+			} finally {
+				if (!cancelled) setLoading(false);
 			}
-		})();
-		const id = setInterval(async () => {
-			try {
-				const tickers = await fetchPrices();
-				if (!cancelled) setCoins(buildCoins(tickers));
-			} catch {}
-		}, 5000);
-		return () => { cancelled = true; clearInterval(id); };
-	}, [fetchPrices, buildCoins]);
+		};
+
+		fetchData();
+		return () => { cancelled = true; };
+	}, [assetFilter]);
+
+	const handleAddTestAsset = async () => {
+		try {
+			const name = prompt('Enter coin name:');
+			const symbol = prompt('Enter symbol:').toUpperCase();
+			const price = parseFloat(prompt('Enter price:'));
+			const change = parseFloat(prompt('Enter 24h change (%):'));
+			
+			if (name && symbol && !isNaN(price)) {
+				await cryptoApi.add({
+					name,
+					symbol,
+					price,
+					change24h: change || 0,
+					image: `https://placehold.co/32x32/3B4DE0/white?text=${symbol.slice(0,2)}`
+				});
+				alert('Asset added! Refreshing list...');
+				window.location.reload();
+			}
+		} catch (err) {
+			alert('Error adding asset: ' + err.message);
+		}
+	};
 
 	useEffect(() => { setCurrentPage(1); }, [assetFilter, timePeriod, currency, rowsPerPage, searchQuery]);
 
@@ -258,6 +274,12 @@ const Explore = () => {
 									<FilterDropdown label="1D" value={timePeriod} options={TIME_PERIODS} onChange={setTimePeriod}/>
 									<FilterDropdown label="GHS" value={currency} options={CURRENCIES} onChange={setCurrency} searchable/>
 									<FilterDropdown label="10 rows" value={rowsPerPage} options={ROWS_OPTIONS} onChange={setRowsPerPage}/>
+									<button 
+										onClick={handleAddTestAsset}
+										className="h-10 px-4 rounded-full border border-gray-10 text-label-2 text-gray-60 hover:bg-gray-5 hover:text-gray-100 transition-colors"
+									>
+										+ Add Asset
+									</button>
 								</div>
 								<div className="overflow-x-auto border-t border-gray-10">
 									<table className="w-full text-left">
@@ -295,7 +317,12 @@ const Explore = () => {
 															<td className="py-4 px-3 text-body text-gray-100">{fmtCompact(coin.market_cap, currLabel)}</td>
 															<td className="py-4 px-3 text-body text-gray-100">{fmtCompact(coin.total_volume, currLabel)}</td>
 															<td className="py-4 px-3">
-																<Link to="/signup" className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-blue-60 text-white text-label-1 hover:opacity-90 transition-opacity">Trade</Link>
+																<Link 
+																	to={user ? `/asset/${coin.symbol.toLowerCase()}` : "/signup"} 
+																	className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-blue-60 text-white text-label-1 hover:opacity-90 transition-opacity"
+																>
+																	{user ? 'View' : 'Trade'}
+																</Link>
 															</td>
 														</tr>
 													);
@@ -330,16 +357,18 @@ const Explore = () => {
 						</div>
 
 						<aside className="w-full lg:w-[320px] shrink-0 flex flex-col gap-6 lg:pl-8 lg:border-l lg:border-gray-10">
-							<div className="bg-blue-60 rounded-2xl p-5 relative overflow-hidden min-h-[160px]">
-								<div className="relative z-10 w-[65%] shrink-0">
-									<h3 className="text-[17px] leading-[24px] font-semibold text-white mb-1">Get started</h3>
-									<p className="text-[15px] leading-[20px] text-white mb-5">Create your account today</p>
-									<Link to="/signup"><button className="bg-white text-black px-4 py-2 rounded-full font-medium text-[15px] transition-opacity hover:opacity-90">Sign up</button></Link>
+							{!user && (
+								<div className="bg-blue-60 rounded-2xl p-5 relative overflow-hidden min-h-[160px]">
+									<div className="relative z-10 w-[65%] shrink-0">
+										<h3 className="text-[17px] leading-[24px] font-semibold text-white mb-1">Get started</h3>
+										<p className="text-[15px] leading-[20px] text-white mb-5">Create your account today</p>
+										<Link to="/signup"><button className="bg-white text-black px-4 py-2 rounded-full font-medium text-[15px] transition-opacity hover:opacity-90">Sign up</button></Link>
+									</div>
+									<div className="absolute right-0 top-1/2 -translate-y-1/2 h-full flex items-center justify-end pointer-events-none">
+										<img src="https://static-assets.coinbase.com/ui-infra/illustration/v1/spotSquare/svg/light/nuxPopularAssets-5.svg" alt="Get started illustration" className="w-[124px] h-[124px] object-contain translate-x-2"/>
+									</div>
 								</div>
-								<div className="absolute right-0 top-1/2 -translate-y-1/2 h-full flex items-center justify-end pointer-events-none">
-									<img src="https://static-assets.coinbase.com/ui-infra/illustration/v1/spotSquare/svg/light/nuxPopularAssets-5.svg" alt="Get started illustration" className="w-[124px] h-[124px] object-contain translate-x-2"/>
-								</div>
-							</div>
+							)}
 						</aside>
 					</div>
 				</Container>

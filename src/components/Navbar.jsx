@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import Logo from './ui/Logo';
 import Button from './ui/Button';
@@ -7,6 +7,7 @@ import Container from './ui/Container';
 import { NavDropdown, NavMenuItem, NavSectionHeader, NavFeatured } from './ui/NavMegaMenu';
 import SearchDropdown from './ui/SearchDropdown';
 import LanguageDropdown from './ui/LanguageDropdown';
+import { useAuth } from '../context/AuthContext';
 
 const Icon = ({ children }) => (
 	<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-gray-60">
@@ -228,6 +229,10 @@ const Navbar = () => {
 	const [langOpen, setLangOpen]         = useState(false);
 	const leaveTimer = useRef(null);
 	const searchInputRef = useRef(null);
+	const { user, logout } = useAuth();
+	const navigate = useNavigate();
+
+	const handleLogout = async () => { await logout(); navigate('/'); };
 
 	const handleEnter = (link) => {
 		if (searchActive) return;
@@ -334,18 +339,37 @@ const Navbar = () => {
 								</AnimatePresence>
 							</div>
 
-							<Link
-								to="/signin"
-								className="hidden sm:flex items-center h-10 px-4 text-[0.875rem] font-semibold text-gray-100 bg-gray-10 hover:bg-gray-15 rounded-full transition-colors whitespace-nowrap"
-							>
-								Sign in
-							</Link>
-							<Link
-								to="/account-type"
-								className="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-200 bg-blue-60 text-white hover:opacity-90 px-4 py-2 text-label-1 whitespace-nowrap"
-							>
-								Sign up
-							</Link>
+							{user ? (
+								<>
+									<Link
+										to="/profile"
+										className="hidden sm:flex items-center h-10 px-4 text-[0.875rem] font-semibold text-gray-100 bg-gray-10 hover:bg-gray-15 rounded-full transition-colors whitespace-nowrap"
+									>
+										{user.name?.split(' ')[0] || 'Profile'}
+									</Link>
+									<button
+										onClick={handleLogout}
+										className="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-200 bg-gray-10 text-gray-100 hover:bg-gray-15 px-4 py-2 text-label-1 whitespace-nowrap"
+									>
+										Sign out
+									</button>
+								</>
+							) : (
+								<>
+									<Link
+										to="/signin"
+										className="hidden sm:flex items-center h-10 px-4 text-[0.875rem] font-semibold text-gray-100 bg-gray-10 hover:bg-gray-15 rounded-full transition-colors whitespace-nowrap"
+									>
+										Sign in
+									</Link>
+									<Link
+										to="/account-type"
+										className="inline-flex items-center justify-center rounded-pill font-semibold transition-all duration-200 bg-blue-60 text-white hover:opacity-90 px-4 py-2 text-label-1 whitespace-nowrap"
+									>
+										Sign up
+									</Link>
+								</>
+							)}
 
 							<button className="lg:hidden flex w-10 h-10 items-center justify-center rounded-full bg-gray-10 hover:bg-gray-15 transition-colors">
 								<svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -263,6 +263,50 @@ const Footer = () => {
 					/>
 				)}
 			</AnimatePresence>
+
+			{/* ── Demo disclaimer strip ── */}
+			<div
+				style={{
+					width: '100%',
+					background: '#0f172a',
+					borderTop: '1px solid #1e293b',
+					padding: '12px 24px',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					gap: '8px',
+				}}
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="#64748b"
+					strokeWidth="2"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					aria-hidden="true"
+					style={{ flexShrink: 0 }}
+				>
+					<circle cx="12" cy="12" r="10" />
+					<line x1="12" y1="8" x2="12" y2="12" />
+					<line x1="12" y1="16" x2="12.01" y2="16" />
+				</svg>
+				<p
+					style={{
+						margin: 0,
+						fontSize: '0.75rem',
+						color: '#64748b',
+						textAlign: 'center',
+						lineHeight: '1.6',
+					}}
+				>
+					<strong style={{ color: '#94a3b8' }}>Demo Project</strong> — This site is a student-built web app created for educational
+					purposes. It is not affiliated with or endorsed by any real cryptocurrency platform.{' '}
+					<strong style={{ color: '#94a3b8' }}>Do not enter real personal information, passwords, or financial data.</strong>
+				</p>
+			</div>
 		</footer>
 	);
 };

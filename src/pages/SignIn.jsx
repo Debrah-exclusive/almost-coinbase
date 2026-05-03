@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/ui/Logo';
+import { useAuth } from '../context/AuthContext';
 
 /* ── Icons ── */
 const PasskeyIcon = () => (
@@ -57,16 +58,29 @@ const SignIn = () => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
+	const [error, setError] = useState('');
+	const [submitting, setSubmitting] = useState(false);
 	const navigate = useNavigate();
+	const { login } = useAuth();
 
 	const handleEmailContinue = (e) => {
 		e.preventDefault();
+		setError('');
 		if (email.trim()) setStep('password');
 	};
 
-	const handlePasswordContinue = (e) => {
+	const handlePasswordContinue = async (e) => {
 		e.preventDefault();
-		navigate('/');
+		setError('');
+		setSubmitting(true);
+		try {
+			await login(email, password);
+			navigate('/profile');
+		} catch (err) {
+			setError(err.message || 'Login failed. Please try again.');
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	return (
@@ -137,6 +151,15 @@ const SignIn = () => {
 								</Link>
 							</p>
 
+							{/* Demo warning note */}
+							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: '#1c1608', border: '1px solid #78350f', borderRadius: '10px', padding: '8px 14px', marginBottom: '16px' }}>
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+									<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+									<line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+								</svg>
+								<span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 500 }}>Demo app – do not use your real password</span>
+							</div>
+
 							<p className="text-center text-[0.75rem] text-[#5B616E] leading-5">
 								Not your device? Use a private window. See our{' '}
 								<a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>
@@ -175,14 +198,27 @@ const SignIn = () => {
 								</div>
 							</div>
 
-							<div className="mb-6" />
+							{/* Demo warning note */}
+							<div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1c1608', border: '1px solid #78350f', borderRadius: '10px', padding: '8px 14px', marginBottom: '16px' }}>
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+									<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+									<line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+								</svg>
+								<span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 500 }}>Demo app – do not use your real password</span>
+							</div>
+
+							{/* Error message */}
+							{error && (
+								<p className="text-[0.8125rem] text-red-500 mb-4 text-center">{error}</p>
+							)}
 
 							{/* Continue button */}
 							<button
 								type="submit"
-								className="w-full h-14 rounded-full bg-[#3B4DE0] hover:bg-[#2F3FC0] active:bg-[#2535A0] text-white font-semibold text-[0.9375rem] transition-colors"
+								disabled={submitting}
+								className="w-full h-14 rounded-full bg-[#3B4DE0] hover:bg-[#2F3FC0] active:bg-[#2535A0] text-white font-semibold text-[0.9375rem] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
 							>
-								Continue
+								{submitting ? 'Signing in…' : 'Continue'}
 							</button>
 						</form>
 					)}
